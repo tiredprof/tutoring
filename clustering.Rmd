@@ -1,0 +1,226 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+# Cluster Analysis ## 
+
+
+##NOTE: Prepared with R version 3.6.0
+
+set the working directory to appropriate folder on your machine, so as to access the data files.
+
+load the required libraries/packages for this chapter 
+Install the package(s) below once on your machine. To do so, uncomment the install.packages line(s) below.
+
+
+```{r}
+#install.packages(c("caret", "BBmisc", "dendextend", "kableExtra")
+library(caret)
+library(BBmisc)
+library(dendextend)
+library(kableExtra)
+library(cluster)
+library(factoextra)
+library(tidyverse)
+```
+
+
+
+
+
+## Problem 3 University Ranking
+The dataset on American College and University Rankings contains information on 1302 American colleges and universities offering an undergraduate program. For each university, there are 17 measurements, including continuous measurements (such as tuition and graduation rate) and categorical measurements (such as location by state and whether it is a private or public school).
+Note that many records are missing some measurements. Our first goal is to estimate these missing values from "similar" records. This will be done by clustering the complete records and then finding the closest cluster for each of the partial records. The missing values will be imputed from the information in that cluster.
+
+### load the data
+```{r}
+universities.df <- read.csv("Universities.csv")
+head(universities.df)
+str(universities.df)
+
+```
+
+### First we need to remove all records with missing measurements from the dataset.
+
+#### non-missing records
+```{r}
+records.missing <- rowSums(is.na(universities.df))>0
+universities.df.nonmissing <- universities.df[!records.missing,]
+```
+
+
+
+### 3.a. 
+For all the continuous measurements, run hierarchical clustering using complete linkage and Euclidean distance. Make sure to normalize the measurements. From the dendrogram: How many clusters seem reasonable for describing these data?
+
+#### Isolating the continuous data and normalizing
+```{r}
+continuous.uni<-universities.df.nonmissing[,c(4:20)]
+n.continuous<-normalize(continuous.uni)
+names<-c("ApplicationsReceived", "ApplicationsAccepted", "NewEnrolled", "PercentNewPercentfromTop10", "PercentfromTop25", "FTUndergrad", "PTUndergrad", "InstateTuition", "outofstatetuition", "room", "board", "additionalfees", "bookcost", "personalcost", "PercentFacultyPhD", "StudenttoFaculty", "GradRate")
+colnames(n.continuous)<-names
+```
+
+
+#### cluster analysis
+
+```{r}
+set.seed(42)
+n.continuous.df<-as.data.frame(scale(n.continuous))
+dist_mat <- dist(n.continuous.df, method = 'euclidean')
+hclust_avg <- hclust(dist_mat, method = 'average')
+plot(hclust_avg)
+```
+
+```{r}
+wss <- (nrow(n.continuous)-1)*sum(apply(n.continuous,2,var))
+for (i in 2:20) wss[i] <- sum(kmeans(n.continuous, centers=i)$withinss)
+plot(1:20, wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
+```
+
+```{r}
+#Cut tree into 3
+cut_avg <- cutree(hclust_avg, k = 3)
+plot(hclust_avg)
+rect.hclust(hclust_avg , k = 3, border = 2:6)
+abline(h = 8, col = 'red')
+```
+
+
+
+```{r}
+avg_dend_obj <- as.dendrogram(hclust_avg)
+avg_col_dend <- color_branches(avg_dend_obj, h = 5)
+plot(avg_col_dend)
+```
+3 Clusters seems reasonable.
+
+
+
+
+
+##3.b. 
+Compare the summary statistics for each cluster and describe each cluster in this context (e.g., "Universities with high tuition, low acceptance
+rate."). Hint: To obtain cluster statistics for hierarchical clustering, use the aggregate() function.
+
+```{r}
+kable(aggregate(n.continuous.df,list(cut_avg),mean))
+hc1 <- hclust(dist(n.continuous,method = "euclidean"), method = "complete" )
+pamvshortset <- pam(dist(n.continuous,method = "euclidean"),3, diss = FALSE)
+clusplot(pamvshortset, shade = FALSE,labels=2,col.clus="blue",col.p="red",span=FALSE,main="Cluster Mapping",cex=1.2)
+pairs(universities.df.nonmissing[,c(4:20)])
+```
+
+```{r}
+universities.df.c <- mutate(n.continuous.df, cluster = cut_avg)
+count(universities.df.c,cluster)
+cluster.rerun<-universities.df.c %>% filter(cluster == "1")
+cluster.rerun<-cluster.rerun[,-18]
+dist_mat <- dist(cluster.rerun, method = 'euclidean')
+hclust_avg <- hclust(dist_mat, method = 'average')
+cut_avg <- cutree(hclust_avg, k = 3)
+avg_dend_obj <- as.dendrogram(hclust_avg)
+avg_col_dend <- color_branches(avg_dend_obj, h = 5)
+kc<-kmeans(cluster.rerun,3)
+hc1 <- hclust(dist(cluster.rerun,method = "euclidean"), method = "complete" )
+pamvshortset <- pam(dist(cluster.rerun,method = "euclidean"),3, diss = FALSE)
+k2 <- kmeans(cluster.rerun, centers = 3, nstart = 25)
+cluster.df.c <- mutate(cluster.rerun, cluster = cut_avg)
+count(cluster.df.c, cluster)
+cluster.rerun<-cluster.df.c %>% filter(cluster == "1")
+cluster.rerun<-cluster.rerun[,-18]
+dist_mat <- dist(cluster.rerun, method = 'euclidean')
+hclust_avg <- hclust(dist_mat, method = 'average')
+cut_avg <- cutree(hclust_avg, k = 3)
+avg_dend_obj <- as.dendrogram(hclust_avg)
+avg_col_dend <- color_branches(avg_dend_obj, h = 5)
+kc<-kmeans(cluster.rerun,3)
+hc1 <- hclust(dist(cluster.rerun,method = "euclidean"), method = "complete" )
+pamvshortset <- pam(dist(cluster.rerun,method = "euclidean"),3, diss = FALSE)
+clusplot(pamvshortset, shade = FALSE,labels=2,col.clus="blue",col.p="red",span=FALSE,main="Cluster Mapping",cex=1.2)
+k2 <- kmeans(cluster.rerun, centers = 3, nstart = 25)
+fviz_cluster(k2, data = cluster.rerun)
+cluster.df.c <- mutate(cluster.rerun, cluster = cut_avg)
+count(cluster.df.c,cluster)
+cluster.rerun<-cluster.df.c %>% filter(cluster != "3")
+cluster.rerun<-cluster.rerun[,-18]
+dist_mat <- dist(cluster.rerun, method = 'euclidean')
+hclust_avg <- hclust(dist_mat, method = 'average')
+cut_avg <- cutree(hclust_avg, k = 3)
+avg_dend_obj <- as.dendrogram(hclust_avg)
+avg_col_dend <- color_branches(avg_dend_obj, h = 5)
+kc<-kmeans(cluster.rerun,3)
+hc1 <- hclust(dist(cluster.rerun,method = "euclidean"), method = "complete" )
+pamvshortset <- pam(dist(cluster.rerun,method = "euclidean"),3, diss = FALSE)
+clusplot(pamvshortset, shade = FALSE,labels=2,col.clus="blue",col.p="red",span=FALSE,main="Cluster Mapping",cex=1.2)
+k2 <- kmeans(cluster.rerun, centers = 3, nstart = 25)
+fviz_cluster(k2, data = cluster.rerun)
+cluster.df.c <- mutate(cluster.rerun, cluster = cut_avg)
+count(cluster.df.c,cluster)
+cluster.rerun<-cluster.df.c %>% filter(cluster != "3")
+cluster.rerun<-cluster.rerun[,-18]
+dist_mat <- dist(cluster.rerun, method = 'euclidean')
+hclust_avg <- hclust(dist_mat, method = 'average')
+cut_avg <- cutree(hclust_avg, k = 3)
+avg_dend_obj <- as.dendrogram(hclust_avg)
+avg_col_dend <- color_branches(avg_dend_obj, h = 5)
+kc<-kmeans(cluster.rerun,3)
+hc1 <- hclust(dist(cluster.rerun,method = "euclidean"), method = "complete" )
+pamvshortset <- pam(dist(cluster.rerun,method = "euclidean"),4, diss = FALSE)
+clusplot(pamvshortset, shade = FALSE,labels=2,col.clus="blue",col.p="red",span=FALSE,main="Cluster Mapping",cex=1.2)
+k2 <- kmeans(cluster.rerun, centers = 3, nstart = 25)
+fviz_cluster(k2, data = cluster.rerun)
+cluster.df.c <- mutate(cluster.rerun, cluster = cut_avg)
+count(cluster.df.c,cluster)
+```
+
+```{r}
+wss <- (nrow(cluster.rerun)-1)*sum(apply(cluster.rerun,2,var))
+for (i in 2:20) wss[i] <- sum(kmeans(cluster.rerun, centers=i)$withinss)
+plot(1:20, wss, type="b", xlab="Number of Clusters", ylab="Within groups sum of squares")
+```
+
+```{r}
+cut_avg <- cutree(hclust_avg, k = 4)
+analysis<-aggregate(cluster.df.c,list(cut_avg),mean)
+analysis<-t(analysis)
+colnames(analysis)<-c("Cluster 1", "Cluster 2", "Cluster 3", "Cluster 4")
+analysis<-analysis[2:18,]
+kable(analysis)
+plot(hclust_avg)
+plot(avg_col_dend)
+plot(hclust_avg)
+rect.hclust(hclust_avg , k = 4, border = 2:6)
+abline(h = 8, col = 'red')
+clusplot(pamvshortset, shade = FALSE,labels=2,col.clus="blue",col.p="red",span=FALSE,main="Cluster Mapping",cex=1.2)
+```
+
+
+Cluster 1:
+School with most in it. Most values are less than average, but not greatly so. They have a slightly elevated student to faculty ratio.
+Cluster 2:
+Cheap school that have a large population but lower than average graduation rate. There are not too many of these schools.
+Cluster 3:
+High top tier students (top 10 and top 25 percent), low student to faculty ratio, high PhD faculty and graduation rate. More part time than full time. Slightly above average acceptance and applications. These are most likely the big tier one research institutions.
+Cluster 4:
+Cheap school with high student to faculty ratio and low PhD percentage on Faculty. Decent enrollment, applications and acceptance, and slightly lower graduation rate. 
+
+
+
+## 3.c. 
+What other external information can explain the contents of some or all of these clusters?
+
+
+Huge outliers and many of the records were filtered out due to incomplete records. The outliers created odd clustering and had to be filtered even though the data was normalized.
+
+
+```{r}
+
+```
+
+
+
+

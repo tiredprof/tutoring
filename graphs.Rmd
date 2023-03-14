@@ -1,0 +1,28 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+```
+
+```{r}
+loc<-read_csv("firelocation.csv")
+dnr<-read_csv("dnr.csv")
+```
+ 
+```{r}
+loc$FireDiscoveryDateTime<-as.Date(loc$FireDiscoveryDateTime)
+loc$month<-format(loc$FireDiscoveryDateTime,"%B")
+loc$m<-as.numeric(format(loc$FireDiscoveryDateTime, "%m"))
+graph<-loc %>% group_by(m) %>% count(month)
+ggplot(graph, aes(y=n, x=m)) + geom_col(fill='blue') + scale_x_continuous(breaks=1:12,labels=c("Jan","Feb","Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) + xlab("Month") + ylab("Number of Fires") + ggtitle("Number of Fires based on the Month")
+```
+```{r}
+graph.cause<-dnr %>% group_by(FIREGCAUSE_LABEL_NM) %>% count(FIREGCAUSE_LABEL_NM)
+ggplot(graph.cause, aes(y=n, x=FIREGCAUSE_LABEL_NM)) + geom_col(fill="blue") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ xlab("Cause of Fire") + ylab("Number of Fires") + ggtitle("Number of Fires based on the Cause")
+```
+ 
+ 

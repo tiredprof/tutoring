@@ -1,0 +1,47 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
+```
+
+```{r}
+data<-read_csv("data.csv")
+```
+
+```{r}
+shapiro.test(log(data$`Height RGR`))
+shapiro.test(log(data$`Leaf RGR`+1))
+shapiro.test(log(data$`Trunk RGR`+1))
+shapiro.test(log(data$Biomass+1))
+shapiro.test(log(data$`Root Vol`+1))
+```
+```{r}
+height.aov<-lm(log(`Height RGR`)~Year+Block+Trt, data=data)
+summary(height.aov)
+plot_model(height.aov)
+leaf<-lm(log(`Leaf RGR`+1)~Year+Block+Trt, data=data)
+summary(leaf)
+plot_model(leaf)
+Trunk<-lm(log(`Trunk RGR`+1)~Year+Block+Trt, data=data)
+summary(Trunk)
+plot_model(Trunk)
+biomass<-lm(log(`Biomass`+1)~Year+Block+Trt, data=data)
+summary(biomass)
+plot_model(biomass)
+root<-lm(log(`Root Vol`+1)~Year+Block+Trt, data=data)
+summary(root)
+plot_model(root)
+```
+
+```{r}
+pairs(data[,4:8])
+
+```
+

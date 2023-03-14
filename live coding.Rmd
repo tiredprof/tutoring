@@ -1,0 +1,90 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+library(readr)
+library(tidyverse)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
+o100 <- read_csv("Olympic100mSplits.csv")
+o400 <- read_csv("Olympic400mSplits.csv")
+colnames(o100)[1]<-"Splits"
+colnames(o400)[1]<-"Splits"
+```
+
+```{r}
+o100.long<-o100 %>% pivot_longer(!Splits, names_to = "Runners", values_to = "time")
+o400.long<-o400 %>% pivot_longer(!Splits, names_to = "Runners", values_to = "time")
+```
+
+```{r}
+o100.long %>% filter(Splits != "TOTAL" & Splits != "RT") %>% ggplot(aes(x=Splits, y=time)) + geom_boxplot()
+o400.long %>% filter(Splits != "TOTAL" & Splits != "RT" & Splits != "Differential") %>% ggplot(aes(x=Splits, y=time)) + geom_boxplot()
+```
+
+```{r}
+t.o100 <- setNames(data.frame(t(o100[,-1])), o100[,1])
+names<-c("RT", "Start-10m", "10-20m", "20-30m", "30-40m", "40-50m", "50-60m", "60-70m", "70-80m", "80-90m", "90-100m", "TOTAL")
+colnames(t.o100)<-names
+cor.test(t.o100$TOTAL, t.o100$RT)
+cor.test(t.o100$TOTAL, t.o100$`Start-10m`)
+cor.test(t.o100$TOTAL, t.o100$`10-20m`)
+cor.test(t.o100$TOTAL, t.o100$`20-30m`)
+cor.test(t.o100$TOTAL, t.o100$`30-40m`)
+cor.test(t.o100$TOTAL, t.o100$`40-50m`)
+cor.test(t.o100$TOTAL, t.o100$`50-60m`)
+cor.test(t.o100$TOTAL, t.o100$`60-70m`)
+cor.test(t.o100$TOTAL, t.o100$`70-80m`)
+cor.test(t.o100$TOTAL, t.o100$`80-90m`)
+cor.test(t.o100$TOTAL, t.o100$`90-100m`)
+```
+20-30m
+60-70m
+
+```{r}
+plot.time<-o100.long %>% filter(Splits == "TOTAL" | Splits == "20-30m") %>% pivot_wider(names_from = Splits, values_from = time) 
+colnames(plot.time)[2]<-"Split"
+ggplot(plot.time, aes(x=TOTAL, y=Split, col=Runners)) + geom_point() 
+plot.time<-o100.long %>% filter(Splits == "TOTAL" | Splits == "60-70m") %>% pivot_wider(names_from = Splits, values_from = time) 
+colnames(plot.time)[2]<-"Split"
+ggplot(plot.time, aes(x=TOTAL, y=Split, col=Runners)) + geom_point() 
+plot.time<-o100.long %>% filter(Splits == "60-70m" | Splits == "20-30m") %>% pivot_wider(names_from = Splits, values_from = time) 
+colnames(plot.time)[c(2:3)]<-c("Early", "Late")
+ggplot(plot.time, aes(x=Early, y=Late, col=Runners)) + geom_point() 
+```
+
+```{r}
+model.o100<-lm(t.o100$TOTAL~t.o100$`20-30m`+t.o100$`60-70m`)
+summary(model.o100)
+plot_model(model.o100)
+```
+
+Approaching significance. 
+
+While the p value was above 0.05, we approaching significance. This may be due to the fact that we have a smaller sample size (n=7) to work with, and the overall results may improve with more data.
+
+y=mx+b
+For every second in 20-30m, you add 3.599 seconds to overall
+For every second in 60-70m, you add 2.686 seconds to overall
+
+
+
+Given the "average" time of 20-30m and 60-70m, what should my total time be?
+```{r}
+t.20<-mean(t.o100$`20-30m`)
+t.60<-mean(t.o100$`60-70m`)
+t.predict<-cbind(t.20, t.60)
+colnames(t.predict)<-c("20-30m", "60-70m")
+t.predict<-as.data.frame(t.predict)
+predicted<-model.o100$coefficients[1]+model.o100$coefficients[2]*t.predict[,1]+model.o100$coefficients[3]*t.predict[,2]
+average.total<-mean(t.o100$TOTAL)
+predicted
+average.total
+predicted-average.total
+```
+

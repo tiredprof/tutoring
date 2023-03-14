@@ -1,0 +1,57 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(patchwork)
+library(gghighlight)
+library(table1)
+wine <- read_csv("~/revised_wine_data.csv")
+```
+
+```{r}
+freq<-ggplot(wine, aes(x=alcohol, col=fct_reorder(style, alcohol))) + geom_freqpoly(show.legend=FALSE) + labs(title="Figure 1: Alcoholic Content in Wines",caption = "X=Alcohol Content, Y=Frequency, Red Line=Red Wine, Blue Line=White Wine", x="X", y="Y") + theme(plot.caption=element_text(size=5))
+alcohol<-ggplot(wine, aes(x=alcohol, y=quality, col=style)) + geom_smooth(show.legend=FALSE)+ gghighlight()+labs(title="Alcoholic Content in Wines based on Quality", caption = "x=Alcohol Content, Y=Quality, Red Line=Red Wine, Blue Line=White Wine", x="X", y="Y")+ theme(plot.caption=element_text(size=5))
+hist<-ggplot(wine, aes(x=sulphates, fill=style)) + geom_histogram() + gghighlight()+labs(caption="x=Sulphates, Y=Count, Red Highlight=Red Wines, Blue Highlight=White Wines", x="X", y="Y", title = "Fig 2: Histogram of Sulphates")+ theme(plot.caption=element_text(size=5))
+quality<-ggplot(wine, aes(y=quality, x=fct_reorder(style, quality))) + geom_boxplot() + labs(caption="X=Type of Wine, Y=Quality of Wine, False is less than 0.6 sulphates, True is more than 0.6 sulphates", subtitle = "Ordered by Types of wine", title = "Fig 4: Boxplot of Wine by Type", x="X", y="Y")+ theme(plot.caption=element_text(size=5))
+sulphates<-ggplot(wine, aes(x=quality, y=sulphates, col=style)) + geom_jitter()+gghighlight() + labs(caption = "X=Quality, Y=Sulphates, Red Highlight=Red Wine, Blue Highlight=White Wine", subtitle = "Highlighted by Types of wine", title = "Fig 3: Scatterplot of Sulphates by Quality", x="X", y="Y")+ theme(plot.caption=element_text(size=5))
+```
+
+```{r}
+wine.revised<-wine %>% select(., -fixed_acidity,-volatile_acidity, -chlorides,-free_sulfur_dioxide, -quality.cat, -alcohol.cat, -chlorides.cat)
+wine.revised$style<-factor(wine.revised$style)
+table<-table1(~citric_acid + residual_sugar + total_sulfur_dioxide + density + pH + sulphates + alcohol + quality | style, digits = 2, data=wine.revised)
+```
+
+
+
+```{r warning=FALSE}
+freq + alcohol
+```
+We see the same basic amount of wine present 
+Here we see that, in general, as pH increases so does the alcoholic content. The only time that this isn't the case is a decrease in white wine at 10% we see a slight shrink in pH that is maintained till about 13%. We also see that the standard error fluctuates a lot at the high and low end of the alcohol scale. This is most likely due to a smaller sample size at those content.
+
+```{r warning=FALSE}
+hist + facet_wrap(~style)
+```
+When we look at the sulphates we see that, in general, white wines will have lower sulphate than white wine. We can also better see the greater number of wines in the white category as opposed to the red category. This makes sense, as sulphates are preservatives and extend the shelf life of wines.
+
+```{r}
+sulphates + facet_wrap(~style)
+```
+
+When we look at quality in a scatter plot, we see that most wines are in the 5-7 quality range and tend to have higher values of sulphates. Good quality white wines have a decrease in sulphates as the quality increases, but red wines have a steady increase and overall higher level of sulphates.
+
+```{r warning=FALSE}
+quality + facet_wrap(~sulphates > .6)
+```
+When we look at the quality of wines, the median value for red is on the bottom of the boxplot for those less than 0.6 sulfates, while those with grater than 0.6 sulfates have the median line on the top end of the boxplot. Meanwhile, the median line for white wines is the same for both above and below the 0.6 threshold.
+
+```{r}
+table
+```
+
+Looking at the demographic table, we see a large difference in white wine and red wine in the citric acid, residual sugar, total sulfur dioxide, alcohol, and quality with White wine having higher means in each. Sulphates and pH have higher amount in Red wine than White. Sulfur Dioxide and residual sugar are both more than one standard deviation away from the lesser value. Overall, there are likely to be significant differences due to the sample sizes.

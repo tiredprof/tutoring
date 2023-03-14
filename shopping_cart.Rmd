@@ -1,0 +1,50 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(dplyr)
+library(reshape2)
+library(plotrix)
+library(kableExtra)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(readxl)
+df <- read_excel("course enrollment.xlsx")
+prod.matrix <- df %>%
+ # removing duplicated products from each order
+ group_by(ID, Class) %>%
+ arrange(Class) %>%
+ unique() %>%
+ # combining products to cart and calculating number of products
+ group_by(ID) %>%
+ summarise(cart=paste(Class,collapse=";"),
+ prod.num=n()) %>%
+ # calculating number of carts
+ group_by(cart, prod.num) %>%
+ summarise(num=n()) %>%
+ ungroup() %>% arrange(desc(num)) %>% filter(prod.num > 1)
+
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+
+```
+
+\begin{landscape}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(scales)
+
+kable(prod.matrix, "latex", booktabs = TRUE, longtable = TRUE, caption = paste("Shopping cart analysis of commonly enrolled courses for Spring 2023")) %>%
+  kable_styling(font_size = 7, latex_options = c("hold_position", "repeat_header"))
+
+
+```
+
+\end{landscape}

@@ -1,0 +1,85 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(dplyr)
+library(reshape2)
+library(plotrix)
+library(kableExtra)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(readxl)
+df <- read_excel("course enrollment.xlsx")
+prod.matrix <- df %>%
+ # removing duplicated products from each order
+ group_by(ID, Class) %>%
+ arrange(Class) %>%
+ unique() %>%
+ # combining products to cart and calculating number of products
+ group_by(ID) %>%
+ summarise(cart=paste(Class,collapse=";"),
+ prod.num=n()) %>%
+ # calculating number of carts
+ group_by(cart, prod.num) %>%
+ summarise(num=n()) %>%
+ ungroup()
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# calculating total number of orders/carts
+tot <- sum(prod.matrix$num)
+
+# spliting orders for sets with 1 product and more than 1 product
+one.prod <- prod.matrix %>% filter(prod.num == 1)
+
+sev.prod <- prod.matrix %>%
+ filter(prod.num > 1) %>%
+ arrange(desc(prod.num))
+# defining parameters for pie chart
+iniR <- 0.2 # initial radius
+cols <- c("#ffffff", "#fec44f", "#fc9272", "#a1d99b", "#fee0d2",
+ "#2ca25f", "#8856a7", "#43a2ca", "#fdbb84", "#e34a33",
+ "#a6bddb", "#dd1c77", "#ffeda0", "#756bb1")
+prod <- df %>%
+ select(Class) %>%
+ arrange(Class) %>%
+ unique()
+prod <- c('NO', c(prod$Class))
+colors <- as.list(setNames(cols[ c(1:(length(prod)))], prod))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 0 circle: blank
+pie(1, radius=iniR, init.angle=90, col=c('white'), border = NA, labels='')
+
+# drawing circles from last to 2nd
+for (i in length(prod):2) {
+ p <- grep(prod[i], sev.prod$cart)
+ col <- rep('NO', times=nrow(sev.prod))
+ col[p] <- prod[i]
+ floating.pie(0,0,c(sev.prod$num, tot-sum(sev.prod$num)), radius=(1+i)*iniR, startpos=pi/2, col=as.character(colors [ c(col, 'NO')]), border="#44aaff")
+}
+
+# 1 circle: orders with 1 product
+floating.pie(0,0,c(tot-sum(one.prod$num),one.prod$num), radius=2*iniR, startpos=pi/2, col=as.character(colors [ c('NO',one.prod$cart)]), border="#44aaff")
+
+# legend
+legend(1.5, 2*iniR, gsub("_"," ",names(colors)[-1]), col=as.character(colors [-1]), pch=19, bty='n', ncol=1)
+# creating a table with the stats
+stat.tab <- prod.matrix %>%
+ select(-prod.num) %>%
+ mutate(share=num/tot) %>%
+ arrange(desc(num))
+
+library(scales)
+stat.tab$share <- percent(stat.tab$share) # converting values to percents
+kable(stat.tab, "latex", booktabs = TRUE, longtable = TRUE, caption = paste("Shopping cart analysis of commonly enrolled courses for Fall 2022")) %>%
+  kable_styling(font_size = 7, latex_options = c("hold_position", "repeat_header"))
+
+
+```

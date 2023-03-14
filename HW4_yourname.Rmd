@@ -1,0 +1,136 @@
+---
+title: "STAR 513: HW4"
+author: "Your Name"
+output: pdf_document
+header-includes:
+  - \usepackage{xcolor}
+  - \usepackage{framed}
+---
+
+<!-- STUDENTS: change the "title" and "author" listed above
+DO NOT EDIT THE SECTION BELOW -->
+\colorlet{shadecolor}{gray!10}
+```{r setup, include=FALSE}
+library(knitr)
+#install the tidyverse library (do this once)
+#install.packages("tidyverse")
+library(tidyverse)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 4, fig.height = 4, tidy = TRUE)
+```
+\newcommand{\hstart}{ \colorlet{shadecolor}{orange!20}
+\begin{shaded} }
+\newcommand{\hstop}{  \end{shaded} \colorlet{shadecolor}{gray!10}}
+<!-- STUDENTS: DO NOT EDIT THE SECTION ABOVE 
+start here, insert homework below -->
+
+# Problem 1 
+
+```{r prob1}
+#Problem 1
+hh<-read.csv("HH2022.csv", header=T)
+hh.lm<-lm(Pace~Age, data=hh)
+```
+
+# Problem 2
+
+```{r prob2}
+#Problem 2
+ggplot(hh.lm, aes(x=hh.lm$fitted.values, y=hh.lm$residuals)) + geom_point()
+```
+
+# Problem 3
+
+\hstart
+
+insert answer
+
+\hstop
+
+# Problem 4 
+
+```{r prob4}
+#Problem 4
+qqnorm(hh.lm$residuals, pch = 1, frame = FALSE)
+qqline(hh.lm$residuals, col = "steelblue", lwd = 2)
+```
+
+\hstart
+
+insert answer
+
+\hstop
+
+# Problem 5 
+
+```{r prob5}
+#problem 5
+ggplot(hh, aes(x=log(Age), y=log(Pace))) + geom_point()
+
+```
+
+# Problem 6
+
+```{r prob6}
+#Problem 6
+lmOut <- lm( log(Pace, base = 10) ∼ log(Age, base = 10), data = hh)
+summary(lmOut)
+```
+
+
+# Problem 7
+
+```{r prob7, results='hide'}
+plot(lmOut)
+```
+
+\hstart
+
+insert answer
+
+\hstop
+
+# Problem 8
+```{r prob8}
+# Problem 8
+pd<-read.csv("PermethrinData.csv")
+pd.lm<-lm(conc~wash_type, data=pd)
+```
+
+
+# Problem 9
+
+```{r prob9}
+# Problem 9
+ggplot(pd.lm, aes(x=pd.lm$fitted.values, y=pd.lm$residuals)) + geom_point()
+```
+
+# Problem 10
+
+\hstart
+
+insert answer
+
+\hstop
+
+# Problem 11
+
+```{r prob11}
+# Problem 11
+qqnorm(pd.lm$residuals, pch = 1, frame = FALSE)
+qqline(pd.lm$residuals, col = "steelblue", lwd = 2)
+```
+
+\hstart
+
+insert answer
+
+\hstop
+
+<!-- STUDENTS: STOP HERE
+DO NOT EDIT THE SECTION BELOW -->
+
+## Appendix
+
+```{r show-code, ref.label = all_labels(), echo = TRUE, eval = FALSE}
+
+```

@@ -1,0 +1,24 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+LED<-read_csv("data.csv")
+```
+
+```{r}
+LED.PCA<-prcomp(LED[,4:8], center = TRUE,scale. = TRUE)
+summary(LED.PCA)
+```
+
+```{r}
+library(ggbiplot)
+ggbiplot(LED.PCA)
+ggbiplot(LED.PCA, ellipse=TRUE, groups=LED$Trt)
+ggbiplot(LED.PCA, ellipse=TRUE, groups=LED$Year)
+ggbiplot(LED.PCA, ellipse=TRUE, groups=LED$Block)
+```
+Trunk, Height, and Root Volume.
+

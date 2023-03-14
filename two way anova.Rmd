@@ -1,0 +1,83 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+An experiment on mung beans was performed to investigate the environmental effects of salinity and water temperature on sprouting. Forty beans were randomly allocated to each of 36 petri dishes that were subject to one of four levels of Salinity (0, 4, 8, and 12 ppm) and one of three Temperatures (32°, 34°, or 36° C). After 48 hours, the biomass of the sprouts in grams was measured.  The percent of beans germinating is also recorded.
+
+Source: https://dasl.datadescription.com/datafile/sprouts/ />
+Data: read_tsv("http://www.stat.umn.edu/~rend0020/data/sprouts.txt") |>
+
+        mutate(across(c(Salinity, Temperature), factor))
+
+```{r}
+library(readr)
+library(tidyverse)
+data<-read_tsv("http://www.stat.umn.edu/~rend0020/data/sprouts.txt")
+factor.data<-data %>% mutate(across(c(Salinity, Temperature), factor))
+```
+
+
+
+The question of interest is "How does biomass depend on salinity and temperature?"
+
+First make a plot of all twelve combinations, adding means and SE for each group. Do you see evidence of a possible interaction? Do the group variances look roughly equal? (you can choose which of salinity and temperature are on the x axis, and which to facet by; or do it both ways)
+```{r}
+SEM <- function(x){data.frame(y=mean(x),
+                              ymin=mean(x)-sd(x)/sqrt(length(x)),
+                              ymax=mean(x)+sd(x)/sqrt(length(x)))}
+ggplot(factor.data, aes(x=Temperature, y=Biomass, fill=Salinity)) + geom_boxplot() + stat_summary(aes(label = round(..y.., 2)), fun.y=mean, geom="text", size=2) + 
+stat_summary(fun.data=SEM, color = 'red', geom='errorbar', width=0.2)
+```
+
+
+Fit a two-way Anova (with the interaction) and interpret each row of the anova table, in particular, what you can conclude from each p-value. 
+
+```{r}
+two.anova<-aov(Biomass~Temperature:Salinity+Temperature+Salinity, data=factor.data)
+summary(two.anova)
+```
+
+Use emmeans to compute the means for all combinations of the two variables.
+
+Use "summary" to get the coefficients for the model from part c, and use them to check the estimated mean biomass for Salinity 4 ppm at 34°. This will use your knowledge about baseline levels, indicator variables, and regression coefficients from previously in the semester.
+```{r}
+two.anova$coefficients[1]+two.anova$coefficients[2]+two.anova$coefficients[4]
+```
+
+
+Compute Tukey pairwise comparisons for the differences between the three temperature levels. If you saw evidence of an interaction in previous parts of this question, do so for each salinity level separately. 
+```{r}
+temp.tukey<-TukeyHSD(two.anova, which= "Temperature")
+temp.tukey
+salinity.tukey<-TukeyHSD(two.anova, "Salinity")
+salinity.tukey
+plot(temp.tukey)
+plot(salinity.tukey)
+kable(salinity.tukey)
+```
+
+For the example in the supplement, where the model was
+
+m
+You'd do this to just do pairwise comparisons for Design, averaging over weight.
+
+em1
+pairs(em1, infer=TRUE)
+```{r}
+pairs(factor.data[c(1,3:4)], infer=TRUE)
+```
+
+Or you'd do this to do pairwise comparisons for Design, for each Weight level separately.
+
+em2
+pairs(em2, infer=TRUE)
+
+How does biomass depend on salinity and temperature? Write "complete" methods and results sections.
+
+```{r}
+library(kableExtra)
+kable(salinity.tukey$Salinity)
+kable(temp.tukey$Temperature)
+```
+

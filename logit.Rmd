@@ -1,0 +1,34 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(sjPlot)
+library(sjlabelled)
+library(sjmisc)
+library(emmeans)
+```
+
+```{r}
+df<-read_csv("data_donner2.csv")
+```
+
+```{r}
+df.model<-glm(Survived~Age+Sex,, data=df, family = "binomial")
+summary(df.model)
+anova(df.model, test="Chisq")
+plot_model(df.model)
+```
+
+```{r}
+df.model$coefficients[1]+df.model$coefficients[2]*36+df.model$coefficients[3]
+df.model$coefficients[1]+df.model$coefficients[2]*36
+rg_m<-ref_grid(df.model, at=list(Age = 36, Sex = "Male"))
+rg_f<-ref_grid(df.model, at=list(Age = 36, Sex = "Female"))
+summary(rg_m)
+summary(rg_f)
+```
+
